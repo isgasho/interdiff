@@ -1,0 +1,25 @@
+diff -u source_1/file_1 source_1_a/file_1
+--- source_1/file_1	2020-07-16 17:34:21.000000000 +0300
++++ source_1_a/file_1	2020-07-16 17:34:21.000000000 +0300
+@@ -5,6 +5,8 @@
+ Over walk dull into son boy door went new.
+ At or happiness commanded daughters as.
+ Is handsome an declared at received in extended vicinity subjects.
++Is handsome received in extended vicinity subjects.
++Is handsome an declared at vicinity subjects.
+ Into miss on he over been late pain an.
+ Only week bore boy what fat case left use.
+-Match round scale now style far times. Your me past an much.
++Match round scale now style far times. Your me past an much.
+\ No newline at end of file
+diff -u source_1/file_2 source_1_a/file_2
+--- source_1/file_2	2020-07-16 17:21:15.000000000 +0300
++++ source_1_a/file_2	2020-07-16 17:21:15.000000000 +0300
+@@ -3,7 +3,6 @@
+ Affronting everything discretion men now own did.
+ Still round match we to.
+ Frankness pronounce daughters remainder extensive has but.
+-Happiness cordially one determine concluded fat.
+ Plenty season beyond by hardly giving of.
+ Consulted or acuteness dejection an smallness if.
+ Outward general passage another as it.

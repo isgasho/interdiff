@@ -84,7 +84,7 @@ func compareFileDiff(oldFileDiff, newFileDiff *diff.FileDiff) *diff.FileDiff {
 			resultFileDiff.Hunks = append(resultFileDiff.Hunks,
 				revertedHunkBody(oldFileDiff.Hunks[i]))
 			i++
-		case newFileDiff.Hunks[i].OrigStartLine+newFileDiff.Hunks[i].OrigLines < oldFileDiff.Hunks[j].OrigStartLine:
+		case newFileDiff.Hunks[j].OrigStartLine+newFileDiff.Hunks[j].OrigLines < oldFileDiff.Hunks[i].OrigStartLine:
 			resultFileDiff.Hunks = append(resultFileDiff.Hunks, newFileDiff.Hunks[j])
 			j++
 		// Hunks are overlapping
