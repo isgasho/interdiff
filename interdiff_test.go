@@ -1,6 +1,7 @@
 package interdiff
 
 import (
+	"bytes"
 	"io"
 	"io/ioutil"
 	"os"
@@ -14,6 +15,17 @@ var interDiffFileTests = []struct {
 }{
 	{"test_examples/result_1.txt", "test_examples/diff_1_a.txt", "test_examples/diff_1_b.txt"},
 	{"test_examples/result_2.txt", "test_examples/diff_2_a.txt", "test_examples/diff_2_b.txt"},
+}
+
+// Reference: https://www.programming-books.io/essential/go/normalize-newlines-1d3abcf6f17c4186bb9617fa14074e48
+// NormalizeNewlines normalizes \r\n (windows) and \r (mac)
+// into \n (unix)
+func NormalizeNewlines(d []byte) []byte {
+	// replace CR LF \r\n (windows) with LF \n (unix)
+	d = bytes.Replace(d, []byte{13, 10}, []byte{10}, -1)
+	// replace CF \r (mac) with LF \n (unix)
+	d = bytes.Replace(d, []byte{13}, []byte{10}, -1)
+	return d
 }
 
 func TestInterDiffMode(t *testing.T) {
@@ -36,8 +48,6 @@ func TestInterDiffMode(t *testing.T) {
 				t.Error(err)
 			}
 
-			correctResultStr := string(correctResult)
-
 			var readerA io.Reader = fileA
 			var readerB io.Reader = fileB
 
@@ -46,9 +56,9 @@ func TestInterDiffMode(t *testing.T) {
 				t.Error(err)
 			}
 
-			if currentResult != correctResultStr {
+			if !bytes.Equal(NormalizeNewlines([]byte(currentResult)), NormalizeNewlines(correctResult)) {
 				t.Errorf("File contents mismatch for %s.\nExpected:\n%s\nGot:\n%s\n",
-					tt.resultFile, correctResultStr, currentResult)
+					tt.resultFile, correctResult, currentResult)
 			}
 		})
 	}
