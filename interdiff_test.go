@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"os"
 	"testing"
+	"time"
 )
 
 var interDiffFileTests = []struct {
@@ -28,7 +29,12 @@ func NormalizeNewlines(d []byte) []byte {
 	return d
 }
 
+func Init() {
+	time.Local = time.UTC
+}
+
 func TestInterDiffMode(t *testing.T) {
+	Init()
 	for _, tt := range interDiffFileTests {
 		t.Run(tt.resultFile, func(t *testing.T) {
 			var fileA, errA = os.Open(tt.diffAFile)
@@ -57,7 +63,7 @@ func TestInterDiffMode(t *testing.T) {
 			}
 
 			if !bytes.Equal(NormalizeNewlines([]byte(currentResult)), NormalizeNewlines(correctResult)) {
-				t.Errorf("File contents mismatch for %s.\nExpected:\n%x\nGot:\n%x\n",
+				t.Errorf("File contents mismatch for %s.\nExpected:\n%s\nGot:\n%s\n",
 					tt.resultFile, correctResult, currentResult)
 			}
 		})
