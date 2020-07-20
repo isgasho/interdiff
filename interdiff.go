@@ -24,13 +24,11 @@ func InterDiff(oldDiff, newDiff io.Reader) (string, error) {
 	newFileDiffs, errNewFiles := diff.NewMultiFileDiffReader(newDiff).ReadAllFiles()
 
 	if errOldFiles != nil {
-		fmt.Errorf("error parsing old diffs")
-		return "", errOldFiles
+		return "", fmt.Errorf("error parsing old diffs %s", errOldFiles)
 	}
 
 	if errNewFiles != nil {
-		fmt.Errorf("error parsing new diffs")
-		return "", errNewFiles
+		return "", fmt.Errorf("error parsing new diffs %s", errNewFiles)
 	}
 
 	result := ""
