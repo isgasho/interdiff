@@ -127,50 +127,24 @@ func compareFileDiff(oldFileDiff, newFileDiff *diff.FileDiff) *diff.FileDiff {
 	return &resultFileDiff
 }
 
-// TODO: compare overlapped hunks
 func compareOverlappedHunks(oldHunks, newHunks []*diff.Hunk) *diff.Hunk {
 	if (len(oldHunks) == 0) || (len(newHunks) == 0) {
 		return nil
 	}
 
-	resultHunk := &diff.Hunk{OrigStartLine: -1,
-		OrigLines:       -1,
-		OrigNoNewlineAt: -1,
-		NewStartLine:    -1,
-		NewLines:        -1,
-		Section:         "",
-		StartPosition:   -1,
-		Body:            []byte{0},
-	}
-
-	var newBody []string
+	resultHunk, currentOrgI := configureResultHunk(oldHunks, newHunks)
 
 	// Indexes of hunks
 	currentOldHunkI, currentNewHunkJ := 0, 0
 	// Indexes of lines in body hunks
 	i, j := -1, -1
+
 	// Body of hunks
+	var newBody []string
 	var oldHunkBody, newHunkBody []string
 
-	var currentOrgI int32
-
-	// First hunk is from old ones
-	if oldHunks[currentOldHunkI].OrigStartLine < newHunks[currentNewHunkJ].OrigStartLine {
-		// Current number of line in origin
-		currentOrgI = oldHunks[currentOldHunkI].OrigStartLine
-		//oldHunkBody = strings.Split(string(oldHunks[currentOldHunkI].Body), "\n")
-		//i = 0
-		resultHunk.OrigStartLine = oldHunks[currentOldHunkI].NewStartLine
-		resultHunk.NewStartLine = newHunks[currentNewHunkJ].NewStartLine -
-			newHunks[currentNewHunkJ].OrigStartLine + currentOrgI
-	} else {
-		// First hunk is from new ones
-		currentOrgI = newHunks[currentNewHunkJ].OrigStartLine
-		//newHunkBody = strings.Split(string(newHunks[currentNewHunkJ].Body), "\n")
-		//j = 0
-		resultHunk.OrigStartLine = oldHunks[currentOldHunkI].NewStartLine -
-			oldHunks[currentOldHunkI].OrigStartLine + currentOrgI
-		resultHunk.NewStartLine = newHunks[currentNewHunkJ].NewStartLine
+	if resultHunk == nil {
+		return nil
 	}
 
 	// Compare, while there are hunks to process
@@ -192,88 +166,104 @@ func compareOverlappedHunks(oldHunks, newHunks []*diff.Hunk) *diff.Hunk {
 		case (i == -1) && (j == -1):
 			break
 		case (i >= 0) && (j == -1):
-			newBody = append(newBody, revertedLine(oldHunkBody[i]))
-			// Added one of lines from origin
-			if !strings.HasPrefix(oldHunkBody[i], "+") {
-				currentOrgI++
-			}
-			i++
-			if i >= len(oldHunkBody) {
-				i = -1
-				currentOldHunkI++
+			{
+				newBody = append(newBody, revertedLine(oldHunkBody[i]))
+				// Added one of lines from origin
+				if !strings.HasPrefix(oldHunkBody[i], "+") {
+					currentOrgI++
+				}
+				i++
 			}
 
 		case (i == -1) && (j >= 0):
-			newBody = append(newBody, newHunkBody[j])
-			// Added one of lines from origin
-			if !strings.HasPrefix(newHunkBody[j], "+") {
-				currentOrgI++
-			}
-			j++
-			if j >= len(newHunkBody) {
-				j = -1
-				currentNewHunkJ++
-			}
-		default:
-			oldLineAction, newLineAction := oldHunkBody[i][0], newHunkBody[j][0]
-			// No added lines
-			if newLineAction != '+' {
-				switch {
-				case oldLineAction == ' ':
-					switch {
-					case newLineAction == ' ':
-						newBody = append(newBody, oldHunkBody[i])
-					case newLineAction == '-':
-						newBody = append(newBody, newHunkBody[j])
-					}
-
-				case oldLineAction == '-':
-					switch {
-					case newLineAction == ' ':
-						newBody = append(newBody, revertedLine(oldHunkBody[i]))
-						// No need to proceed case since same line was deleted in both sources
-						//case strings.HasPrefix(newHunkBody[j], "-"):
-					}
-				}
-				currentOrgI++
-				i++
-				j++
-			}
-
-			// Contains added lines
-			switch {
-			case (oldLineAction == '+') && (newLineAction == '+'):
-				// In case both lines have same content, then don't mark it as new
-				if oldHunkBody[i][1:] == newHunkBody[j][1:] {
-					newBody = append(newBody, " "+oldHunkBody[i][1:])
-				} else {
-					newBody = append(newBody, revertedLine(oldHunkBody[i]))
-					newBody = append(newBody, newHunkBody[j])
-				}
-				i++
-				j++
-			case oldLineAction == '+':
-				newBody = append(newBody, revertedLine(oldHunkBody[i]))
-				i++
-			case newLineAction == '+':
+			{
 				newBody = append(newBody, newHunkBody[j])
+				// Added one of lines from origin
+				if !strings.HasPrefix(newHunkBody[j], "+") {
+					currentOrgI++
+				}
 				j++
 			}
 
-			if (i < len(oldHunkBody)) && (len(oldHunkBody[i]) > 0) {
-				oldLineAction = oldHunkBody[i][0]
-			} else {
-				i = -1
-				currentOldHunkI++
-			}
+		default:
+			{
+				switch {
+				case strings.HasPrefix(oldHunkBody[i], "+"):
+					newBody = append(newBody, revertedLine(oldHunkBody[i]))
+					i++
+				case strings.HasPrefix(newHunkBody[j], "+"):
+					newBody = append(newBody, newHunkBody[j])
+					j++
+				default:
+					{
+						switch {
+						case strings.HasPrefix(oldHunkBody[i], " ") && strings.HasPrefix(newHunkBody[j], " "):
+							newBody = append(newBody, oldHunkBody[i])
+						case strings.HasPrefix(oldHunkBody[i], "-") && strings.HasPrefix(newHunkBody[j], " "):
+							newBody = append(newBody, revertedLine(oldHunkBody[i]))
+						case strings.HasPrefix(oldHunkBody[i], " ") && strings.HasPrefix(newHunkBody[j], "-"):
+							newBody = append(newBody, newHunkBody[j])
+						default:
+							break
+						}
 
-			if (j < len(newHunkBody)) && (len(newHunkBody[j]) > 0) {
-				newLineAction = newHunkBody[j][0]
-			} else {
-				j = -1
-				currentNewHunkJ++
+						currentOrgI++
+						i++
+						j++
+					}
+				}
 			}
 		}
+
+		if i >= len(oldHunkBody) {
+			i = -1
+			currentOldHunkI++
+		}
+
+		if j >= len(newHunkBody) {
+			j = -1
+			currentNewHunkJ++
+		}
+	}
+
+	resultHunk.Body = []byte(strings.Join(newHunkBody, "\n"))
+
+	for _, line := range newBody {
+		if !strings.HasPrefix(line, " ") {
+			return resultHunk
+		}
+	}
+
+	return nil
+}
+
+func configureResultHunk(oldHunks, newHunks []*diff.Hunk) (*diff.Hunk, int32) {
+	if (len(oldHunks) == 0) || (len(newHunks) == 0) {
+		return nil, 0
+	}
+	firstOldHunk, firstNewHunk := oldHunks[0], newHunks[0]
+	var currentOrgI int32
+	resultHunk := &diff.Hunk{OrigStartLine: -1,
+		OrigLines:       -1,
+		OrigNoNewlineAt: -1,
+		NewStartLine:    -1,
+		NewLines:        -1,
+		Section:         "",
+		StartPosition:   -1,
+		Body:            []byte{0},
+	}
+
+	if firstOldHunk.OrigStartLine < firstNewHunk.OrigStartLine {
+		// Current number of line in origin
+		currentOrgI = firstOldHunk.OrigStartLine
+		resultHunk.OrigStartLine = firstOldHunk.NewStartLine
+		resultHunk.NewStartLine = firstNewHunk.NewStartLine -
+			firstNewHunk.OrigStartLine + currentOrgI
+	} else {
+		currentOrgI = firstNewHunk.OrigStartLine
+		resultHunk.OrigStartLine = firstOldHunk.NewStartLine -
+			firstOldHunk.OrigStartLine + currentOrgI
+		resultHunk.NewStartLine = firstNewHunk.NewStartLine
 	}
 
 	lastOldHunk, lastNewHunk := oldHunks[len(oldHunks)-1], newHunks[len(newHunks)-1]
@@ -297,15 +287,8 @@ func compareOverlappedHunks(oldHunks, newHunks []*diff.Hunk) *diff.Hunk {
 	// TODO: Concatenate sections
 	resultHunk.Section = ""
 	resultHunk.StartPosition = oldHunks[0].StartPosition
-	resultHunk.Body = []byte(strings.Join(newHunkBody, "\n"))
 
-	for _, line := range newBody {
-		if !strings.HasPrefix(line, " ") {
-			return resultHunk
-		}
-	}
-
-	return nil
+	return resultHunk, currentOrgI
 }
 
 func revertedHunkBody(hunk *diff.Hunk) *diff.Hunk {
