@@ -1,5 +1,5 @@
---- source_1_a/file_1	2020-07-16 17:34:21.000000000 +0300
-+++ source_1_b/file_1	2020-07-16 17:34:21.000000000 +0300
+--- source_1_a/file_1	2020-07-16 14:34:21.000000000 +0000
++++ source_1_b/file_1	2020-07-16 14:34:21.000000000 +0000
 @@ -5,8 +1,9 @@
  Over walk dull into son boy door went new.
  At or happiness commanded daughters as.
@@ -23,8 +23,8 @@
 +Is handsome an declared at received in extended vicinity subjects.
 +Match round scale now style far times. Your me past an much.
 \ No newline at end of file
---- source_1_a/file_2	2020-07-16 17:21:15.000000000 +0300
-+++ source_1_b/file_2	2020-07-16 17:21:15.000000000 +0300
+--- source_1_a/file_2	2020-07-16 14:21:15.000000000 +0000
++++ source_1_b/file_2	2020-07-16 14:21:15.000000000 +0000
 @@ -3,6 +9,5 @@
  Affronting everything discretion men now own did.
  Still round match we to.
