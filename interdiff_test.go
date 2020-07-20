@@ -21,7 +21,7 @@ var interDiffFileTests = []struct {
 // Reference: https://www.programming-books.io/essential/go/normalize-newlines-1d3abcf6f17c4186bb9617fa14074e48
 // NormalizeNewlines normalizes \r\n (windows) and \r (mac)
 // into \n (unix)
-func NormalizeNewlines(d []byte) []byte {
+func normalizeNewlines(d []byte) []byte {
 	// replace CR LF \r\n (windows) with LF \n (unix)
 	d = bytes.Replace(d, []byte{13, 10}, []byte{10}, -1)
 	// replace CF \r (mac) with LF \n (unix)
@@ -29,12 +29,11 @@ func NormalizeNewlines(d []byte) []byte {
 	return d
 }
 
-func Init() {
+func init() {
 	time.Local = time.UTC
 }
 
 func TestInterDiffMode(t *testing.T) {
-	Init()
 	for _, tt := range interDiffFileTests {
 		t.Run(tt.resultFile, func(t *testing.T) {
 			var fileA, errA = os.Open(tt.diffAFile)
@@ -62,7 +61,7 @@ func TestInterDiffMode(t *testing.T) {
 				t.Error(err)
 			}
 
-			if !bytes.Equal(NormalizeNewlines([]byte(currentResult)), NormalizeNewlines(correctResult)) {
+			if !bytes.Equal(normalizeNewlines([]byte(currentResult)), normalizeNewlines(correctResult)) {
 				t.Errorf("File contents mismatch for %s.\nExpected:\n%s\nGot:\n%s\n",
 					tt.resultFile, correctResult, currentResult)
 			}
