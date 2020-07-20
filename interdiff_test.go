@@ -57,7 +57,7 @@ func TestInterDiffMode(t *testing.T) {
 			}
 
 			if !bytes.Equal(NormalizeNewlines([]byte(currentResult)), NormalizeNewlines(correctResult)) {
-				t.Errorf("File contents mismatch for %s.\nExpected:\n%s\nGot:\n%s\n",
+				t.Errorf("File contents mismatch for %s.\nExpected:\n%x\nGot:\n%x\n",
 					tt.resultFile, correctResult, currentResult)
 			}
 		})
