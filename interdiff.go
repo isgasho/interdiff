@@ -1,6 +1,7 @@
 package interdiff
 
 import (
+	"errors"
 	"fmt"
 	"github.com/sourcegraph/go-diff/diff"
 	"io"
@@ -39,18 +40,19 @@ func InterDiff(oldDiff, newDiff io.Reader) (string, error) {
 	for (i < len(oldFileDiffs)) && (j < len(newFileDiffs)) {
 		switch {
 		case oldFileDiffs[i].OrigName == newFileDiffs[j].OrigName:
-			comparedFileDiff, err := compareFileDiff(oldFileDiffs[i], newFileDiffs[j])
+			mergedFileDiff, err := mergeFileDiff(oldFileDiffs[i], newFileDiffs[j])
 
 			if err != nil {
-				return "", err
+				return "", fmt.Errorf("merging diffs for file %q: %w", oldFileDiffs[i].OrigName, err)
 			}
 
-			fileDiffContent, err := diff.PrintFileDiff(comparedFileDiff)
-			if err == nil {
-				result += string(fileDiffContent)
-			} else {
-				return "", err
+			fileDiffContent, err := diff.PrintFileDiff(mergedFileDiff)
+
+			if err != nil {
+				return "", fmt.Errorf("printing merged diffs for file %q: %w", oldFileDiffs[i].OrigName, err)
 			}
+
+			result += string(fileDiffContent)
 			i++
 			j++
 		case oldFileDiffs[i].OrigName < newFileDiffs[j].OrigName:
@@ -86,7 +88,7 @@ func InterDiffPath(sourcePath string, oldDiff, newDiff io.Reader) (string, error
 	return "", nil
 }
 
-func compareFileDiff(oldFileDiff, newFileDiff *diff.FileDiff) (*diff.FileDiff, error) {
+func mergeFileDiff(oldFileDiff, newFileDiff *diff.FileDiff) (*diff.FileDiff, error) {
 	// Configuration of result FileDiff
 	// TODO: something with extended (extended header lines)
 	resultFileDiff := diff.FileDiff{OrigName: oldFileDiff.NewName,
@@ -116,7 +118,7 @@ func compareFileDiff(oldFileDiff, newFileDiff *diff.FileDiff) (*diff.FileDiff, e
 			mergedOverlappingHunk, err := mergeOverlappingHunks(oldHunks, newHunks)
 
 			if err != nil {
-				return nil, err
+				return nil, fmt.Errorf("merging overlapping hunks: %w", err)
 			}
 
 			// In case opposite hunks aren't doing same changes.
@@ -176,7 +178,7 @@ func mergeOverlappingHunks(oldHunks, newHunks []*diff.Hunk) (*diff.Hunk, error) 
 	resultHunk, currentOrgI, err := configureResultHunk(oldHunks, newHunks)
 
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("configuring result hunk: %w", err)
 	}
 
 	// Indexes of hunks
@@ -189,7 +191,7 @@ func mergeOverlappingHunks(oldHunks, newHunks []*diff.Hunk) (*diff.Hunk, error) 
 	var newBody []string
 	var oldHunkBody, newHunkBody []string
 
-	// Iterating through the hunks in order there're appearing in origin file.
+	// Iterating through the hunks in the order they're appearing in origin file.
 	// Using number of line in origin (currentOrgI) as an anchor to process line by line.
 	// By using currentOrgI as anchor it is easier to see how changes have been applied step by step.
 
@@ -294,7 +296,7 @@ func mergeOverlappingHunks(oldHunks, newHunks []*diff.Hunk) (*diff.Hunk, error) 
 
 func configureResultHunk(oldHunks, newHunks []*diff.Hunk) (*diff.Hunk, int32, error) {
 	if (len(oldHunks) == 0) || (len(newHunks) == 0) {
-		return nil, 0, fmt.Errorf("one of the hunks array is empty")
+		return nil, 0, errors.New("one of the hunks array is empty")
 	}
 
 	var currentOrgI int32
@@ -354,8 +356,7 @@ func configureResultHunk(oldHunks, newHunks []*diff.Hunk) (*diff.Hunk, int32, er
 		resultHunk.NewLines = lastNewHunk.NewStartLine + lastNewHunk.NewLines - resultHunk.NewStartLine
 	}
 
-	// TODO: Check those values
-	resultHunk.OrigNoNewlineAt = lastOldHunk.OrigNoNewlineAt
+	resultHunk.OrigNoNewlineAt = 0
 	resultHunk.StartPosition = firstOldHunk.StartPosition
 
 	return resultHunk, currentOrgI, nil
